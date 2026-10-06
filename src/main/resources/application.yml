@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: redecide
+  datasource:
+    url: jdbc:postgresql://localhost:5432/redecide
+    username: redecide
+    password: redecide
+  sql:
+    init:
+      mode: always
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      auto-offset-reset: earliest
+
+demo:
+  # Which consumer design is active: blocking | retry-topic | redecide
+  design: redecide
+  topics:
+    payments: ${demo.design}.payments
+    beneficiaries: ${demo.design}.beneficiaries
+  blocking:
+    backoff-ms: 300
+  retry-topic:
+    attempts: 6
+    delay-ms: 1000
+  deferral:
+    # Lock the beneficiary row while deciding to wait. Turning this off reintroduces the lost wakeup.
+    lock-precondition: true
+  wait-timeout: PT24H
+  sweeper:
+    enabled: false
+    interval-ms: 30000

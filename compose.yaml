@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: redecide
+      POSTGRES_USER: redecide
+      POSTGRES_PASSWORD: redecide
+    ports:
+      - "5432:5432"
+
+  kafka:
+    image: apache/kafka:3.8.0
+    ports:
+      - "9092:9092"

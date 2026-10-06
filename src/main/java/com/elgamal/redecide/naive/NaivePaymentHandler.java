@@ -1,0 +1,74 @@
+package com.elgamal.redecide.naive;
+
+import com.elgamal.redecide.beneficiary.BeneficiaryProjection;
+import com.elgamal.redecide.beneficiary.BeneficiaryStatus;
+import com.elgamal.redecide.events.DomainEvent;
+import com.elgamal.redecide.events.DomainEvent.BeneficiaryActivated;
+import com.elgamal.redecide.events.DomainEvent.PaymentAmended;
+import com.elgamal.redecide.events.DomainEvent.PaymentCancelled;
+import com.elgamal.redecide.events.DomainEvent.PaymentRequested;
+import com.elgamal.redecide.payment.Payment;
+import com.elgamal.redecide.payment.PaymentRepository;
+import com.elgamal.redecide.support.EventJournal;
+import com.elgamal.redecide.support.EventJournal.Kind;
+import com.elgamal.redecide.support.Outbox;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * The common approach: a missing precondition is an exception, and retry infrastructure decides
+ * when to try again. Used by both the blocking and the retry-topic designs.
+ *
+ * <p>Saving the payment and processing it share one database transaction (a plain
+ * {@code @Transactional}; no Kafka transactions, which non-blocking retries do not support).
+ * Throwing rolls the transaction back, so the service keeps no record of the request.
+ */
+@Service
+@ConditionalOnExpression("'${demo.design}' != 'redecide'")
+public class NaivePaymentHandler {
+
+    private final PaymentRepository payments;
+    private final BeneficiaryProjection beneficiaries;
+    private final Outbox outbox;
+    private final EventJournal journal;
+
+    public NaivePaymentHandler(PaymentRepository payments,
+                               BeneficiaryProjection beneficiaries,
+                               Outbox outbox,
+                               EventJournal journal) {
+        this.payments = payments;
+        this.beneficiaries = beneficiaries;
+        this.outbox = outbox;
+        this.journal = journal;
+    }
+
+    @Transactional
+    public void handle(DomainEvent event) {
+        switch (event) {
+            case PaymentRequested e -> request(e);
+            case PaymentAmended e -> payments.findById(e.paymentId()).ifPresentOrElse(
+                    payment -> payment.amend(e.amount()),
+                    () -> journal.record(Kind.SKIPPED_UNKNOWN_PAYMENT, e.paymentId()));
+            case PaymentCancelled e -> payments.findById(e.paymentId()).ifPresentOrElse(
+                    Payment::cancel,
+                    () -> journal.record(Kind.SKIPPED_UNKNOWN_PAYMENT, e.paymentId()));
+            case BeneficiaryActivated e -> throw new IllegalArgumentException("Unexpected on payments topic: " + e);
+        }
+    }
+
+    private void request(PaymentRequested event) {
+        if (payments.existsById(event.paymentId())) {
+            return;
+        }
+        Payment payment = payments.save(
+                Payment.requested(event.paymentId(), event.beneficiaryId(), event.amount()));
+
+        if (beneficiaries.read(event.beneficiaryId()) != BeneficiaryStatus.ACTIVE) {
+            journal.record(Kind.BENEFICIARY_NOT_ACTIVE, event.paymentId());
+            throw new BeneficiaryNotActiveException(event.beneficiaryId());
+        }
+        payment.submit();
+        outbox.paymentSubmitted(payment.id(), payment.amount());
+    }
+}
