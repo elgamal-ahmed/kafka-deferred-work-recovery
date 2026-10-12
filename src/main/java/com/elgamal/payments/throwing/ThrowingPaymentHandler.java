@@ -34,9 +34,9 @@ public class ThrowingPaymentHandler {
     private final EventJournal journal;
 
     public ThrowingPaymentHandler(PaymentRepository payments,
-                               BeneficiaryProjection beneficiaries,
-                               Outbox outbox,
-                               EventJournal journal) {
+                                  BeneficiaryProjection beneficiaries,
+                                  Outbox outbox,
+                                  EventJournal journal) {
         this.payments = payments;
         this.beneficiaries = beneficiaries;
         this.outbox = outbox;
