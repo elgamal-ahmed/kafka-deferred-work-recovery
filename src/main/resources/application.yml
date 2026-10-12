@@ -1,10 +1,10 @@
 spring:
   application:
-    name: redecide
+    name: payments
   datasource:
-    url: jdbc:postgresql://localhost:5432/redecide
-    username: redecide
-    password: redecide
+    url: jdbc:postgresql://localhost:5432/payments
+    username: payments
+    password: payments
     hikari:
       # PostgreSQL's default, set here because the lost-wakeup fix depends on it.
       # See PaymentCommands.onBeneficiaryActivated.
@@ -22,8 +22,8 @@ spring:
       auto-offset-reset: earliest
 
 demo:
-  # Which consumer design is active: blocking | retry-topic | redecide
-  design: redecide
+  # Which consumer design is active: blocking | retry-topic | waiting
+  design: waiting
   topics:
     payments: ${demo.design}.payments
     beneficiaries: ${demo.design}.beneficiaries

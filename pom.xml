@@ -12,9 +12,9 @@
     </parent>
 
     <groupId>com.elgamal</groupId>
-    <artifactId>redecide</artifactId>
+    <artifactId>payments-service</artifactId>
     <version>0.1.0-SNAPSHOT</version>
-    <name>redecide</name>
+    <name>payments-service</name>
     <description>Don't Replay It, Re-decide It: recovering deferred work in Kafka and Java</description>
 
     <properties>

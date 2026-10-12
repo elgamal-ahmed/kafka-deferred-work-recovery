@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: redecide
-      POSTGRES_USER: redecide
-      POSTGRES_PASSWORD: redecide
+      POSTGRES_DB: payments
+      POSTGRES_USER: payments
+      POSTGRES_PASSWORD: payments
     ports:
       - "5432:5432"
 
