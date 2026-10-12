@@ -1,5 +1,7 @@
 # Don't Replay It, Re-decide It
 
+[![CI](https://github.com/elgamal-ahmed/kafka-deferred-work-recovery/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/elgamal-ahmed/kafka-deferred-work-recovery/actions/workflows/ci.yml)
+
 Demo code for the talk *Don't Replay It, Re-decide It: Recovering Deferred Work in Kafka and Java*.
 
 A customer adds a new payee and pays them straight away. The payee is still being verified, so the
