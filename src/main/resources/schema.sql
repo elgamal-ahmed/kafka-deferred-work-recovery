@@ -3,8 +3,6 @@ create table if not exists payment (
     beneficiary_id   varchar(64)    not null,
     amount           numeric(19, 2) not null,
     status           varchar(32)    not null,
-    waiting_since    timestamp with time zone,
-    rejection_reason varchar(255),
     version          bigint         not null
 );
 

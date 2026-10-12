@@ -5,6 +5,10 @@ spring:
     url: jdbc:postgresql://localhost:5432/redecide
     username: redecide
     password: redecide
+    hikari:
+      # PostgreSQL's default, set here because the lost-wakeup fix depends on it.
+      # See PaymentCommands.onBeneficiaryActivated.
+      transaction-isolation: TRANSACTION_READ_COMMITTED
   sql:
     init:
       mode: always
@@ -31,7 +35,7 @@ demo:
   deferral:
     # Lock the beneficiary row while deciding to wait. Turning this off reintroduces the lost wakeup.
     lock-precondition: true
-  wait-timeout: PT24H
   sweeper:
-    enabled: false
+    # Backstop for missed wake-ups. Integration tests turn it off and call sweep() themselves.
+    enabled: true
     interval-ms: 30000

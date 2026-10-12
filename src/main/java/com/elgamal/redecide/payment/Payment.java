@@ -8,7 +8,6 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 
 @Entity
 @Table(name = "payment")
@@ -23,10 +22,6 @@ public class Payment {
 
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
-
-    private Instant waitingSince;
-
-    private String rejectionReason;
 
     /** Optimistic lock: two transactions cannot both move the payment on from the same version. */
     @Version
@@ -53,21 +48,12 @@ public class Payment {
         status = PaymentStatus.SUBMITTED;
     }
 
-    public void markWaiting(Instant now) {
+    public void markWaiting() {
         requireOpen("wait");
         status = PaymentStatus.WAITING_FOR_BENEFICIARY;
-        if (waitingSince == null) {
-            waitingSince = now;
-        }
     }
 
-    public void reject(String reason) {
-        requireOpen("reject");
-        status = PaymentStatus.REJECTED;
-        rejectionReason = reason;
-    }
-
-    /** Returns false if the payment has already been submitted, cancelled or rejected. */
+    /** Returns false if the payment has already been submitted or cancelled. */
     public boolean amend(BigDecimal newAmount) {
         if (!isOpen()) {
             return false;
@@ -76,7 +62,7 @@ public class Payment {
         return true;
     }
 
-    /** Returns false if the payment has already been submitted, cancelled or rejected. */
+    /** Returns false if the payment has already been submitted or cancelled. */
     public boolean cancel() {
         if (!isOpen()) {
             return false;
@@ -105,13 +91,5 @@ public class Payment {
 
     public PaymentStatus status() {
         return status;
-    }
-
-    public Instant waitingSince() {
-        return waitingSince;
-    }
-
-    public String rejectionReason() {
-        return rejectionReason;
     }
 }

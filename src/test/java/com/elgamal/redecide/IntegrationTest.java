@@ -16,6 +16,7 @@ import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.kafka.KafkaContainer;
 
@@ -31,8 +32,12 @@ import static org.awaitility.Awaitility.await;
 /**
  * Real Kafka and PostgreSQL, started once for the whole test run. Each test class picks a design
  * with {@code demo.design}; each design uses its own topics.
+ *
+ * <p>The scheduled sweeper is off, so it cannot run in the middle of a controlled race. Tests
+ * that need it call {@code PaymentCommands.sweep()} directly.
  */
 @SpringBootTest
+@TestPropertySource(properties = "demo.sweeper.enabled=false")
 @Import(TestHooksConfig.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public abstract class IntegrationTest {

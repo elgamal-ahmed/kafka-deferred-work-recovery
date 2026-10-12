@@ -43,6 +43,11 @@ public class NaivePaymentHandler {
         this.journal = journal;
     }
 
+    /**
+     * An amend or cancel for a payment we have no record of is skipped. Throwing would not help:
+     * the record would be retried too, but in this design a payment is only ever committed once
+     * it has been submitted, so there is never an open payment for it to act on.
+     */
     @Transactional
     public void handle(DomainEvent event) {
         switch (event) {

@@ -21,7 +21,7 @@ import java.util.Optional;
 
 /**
  * Entry points for the re-decide design. A missing business precondition never throws:
- * the request is saved first, and waiting is recorded as domain state.
+ * the request and its waiting state commit together.
  */
 @Service
 @ConditionalOnProperty(name = "demo.design", havingValue = "redecide")
@@ -56,7 +56,7 @@ public class PaymentCommands {
         this.journal = journal;
     }
 
-    /** Save first, then decide. Empty if this request was already received. */
+    /** Save the request and decide in one transaction. Empty if this request was already received. */
     public Optional<ProcessingOutcome> accept(PaymentRequested event) {
         return tx.execute(status -> {
             if (payments.existsById(event.paymentId())) {
@@ -83,8 +83,13 @@ public class PaymentCommands {
     }
 
     /**
-     * Record the activation and find who was waiting for it in one transaction, then re-decide
-     * each waiting payment in its own transaction.
+     * Record the activation, then find who was waiting for it, then re-decide each waiting
+     * payment in its own transaction.
+     *
+     * <p>Relies on READ COMMITTED. If a deferral holds the beneficiary row, the upsert waits for
+     * it to commit, and the select that follows takes a new snapshot, so it sees the payment the
+     * deferral saved. Under REPEATABLE READ the select would reuse the snapshot from before the
+     * wait and miss that payment.
      */
     public Map<String, ProcessingOutcome> onBeneficiaryActivated(String beneficiaryId) {
         List<String> waiting = tx.execute(status -> {
@@ -118,7 +123,7 @@ public class PaymentCommands {
 
     /**
      * Backstop for anything event-driven waking missed. Re-deciding a payment that still has to
-     * wait changes nothing; one that has waited too long is rejected.
+     * wait changes nothing.
      */
     public Map<String, ProcessingOutcome> sweep() {
         List<String> waiting = jdbc.queryForList(

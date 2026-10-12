@@ -8,6 +8,7 @@ import java.util.List;
 
 /**
  * The payment service's local copy of beneficiary status, kept up to date from BeneficiaryActivated.
+ * With locking on, deferrals also insert PENDING rows: they exist to be locked, not as data.
  */
 @Component
 public class BeneficiaryProjection {
@@ -45,6 +46,7 @@ public class BeneficiaryProjection {
      * transaction commits. An activation that runs in the meantime blocks on its upsert, so by the
      * time it looks for waiting payments it can see the one this transaction is about to save.
      * Without the insert there would be no row to lock for a beneficiary we have never seen.
+     * This only works under READ COMMITTED; see PaymentCommands.onBeneficiaryActivated.
      */
     public BeneficiaryStatus readForDecision(String beneficiaryId) {
         if (!lockPrecondition) {

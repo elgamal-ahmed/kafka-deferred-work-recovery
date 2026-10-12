@@ -19,7 +19,7 @@ public class EventJournal {
         BENEFICIARY_NOT_ACTIVE,
         /** An amend or cancel arrived for a payment the service has no record of. */
         SKIPPED_UNKNOWN_PAYMENT,
-        /** A re-decision found the payment already cancelled, submitted or rejected. */
+        /** A re-decision found the payment already cancelled or submitted. */
         SUPERSEDED,
         /** A re-decision lost an optimistic-lock race and was retried against fresh state. */
         OPTIMISTIC_CONFLICT

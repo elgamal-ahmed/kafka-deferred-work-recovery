@@ -11,9 +11,6 @@ import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.util.backoff.FixedBackOff;
 
-import java.time.Clock;
-import java.time.Duration;
-
 @Configuration
 public class DemoConfig {
 
@@ -29,13 +26,8 @@ public class DemoConfig {
     }
 
     @Bean
-    Clock clock() {
-        return Clock.systemUTC();
-    }
-
-    @Bean
-    PaymentDecider paymentDecider(@Value("${demo.wait-timeout}") Duration waitTimeout) {
-        return new PaymentDecider(waitTimeout);
+    PaymentDecider paymentDecider() {
+        return new PaymentDecider();
     }
 
     @Bean

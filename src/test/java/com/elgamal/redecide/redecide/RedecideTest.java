@@ -7,6 +7,7 @@ import com.elgamal.redecide.events.DomainEvent.PaymentAmended;
 import com.elgamal.redecide.events.DomainEvent.PaymentCancelled;
 import com.elgamal.redecide.events.DomainEvent.PaymentRequested;
 import com.elgamal.redecide.events.EventPublisher;
+import com.elgamal.redecide.redecide.ProcessingOutcome.Execute;
 import com.elgamal.redecide.redecide.ProcessingOutcome.Supersede;
 import com.elgamal.redecide.support.EventJournal.Kind;
 import org.junit.jupiter.api.Test;
@@ -78,5 +79,30 @@ class RedecideTest extends IntegrationTest {
         assertThat(journal.contains(Kind.OPTIMISTIC_CONFLICT, "P5")).isTrue();
         assertThat(status("P5")).isEqualTo(CANCELLED);
         assertThat(outbox.rows()).isEmpty();
+    }
+
+    @Test
+    void amendAfterLoadFailsVersionCheckAndSendsNewAmount() throws Exception {
+        commands.accept(new PaymentRequested("P6", "B6", gbp("500.00")));
+        assertThat(status("P6")).isEqualTo(WAITING_FOR_BENEFICIARY);
+
+        // The wake-up loads P6 at £500, then pauses before writing its decision.
+        PausingHooks.Pause pause = hooks.pauseOnce("P6");
+        CompletableFuture<Map<String, ProcessingOutcome>> wakeUp =
+                async(() -> commands.onBeneficiaryActivated("B6"));
+        pause.awaitReached();
+
+        // In that gap, the customer lowers the amount to £300.
+        commands.amend(new PaymentAmended("P6", gbp("300.00")));
+        pause.release();
+
+        // The stale Execute(£500) fails the @Version check and its outbox row rolls back with it.
+        // P6 is reloaded and the decision is made again, for £300.
+        Map<String, ProcessingOutcome> outcomes = wakeUp.get(10, TimeUnit.SECONDS);
+        assertThat(outcomes.get("P6")).isInstanceOf(Execute.class);
+        assertThat(journal.count(Kind.OPTIMISTIC_CONFLICT, "P6")).isEqualTo(1);
+        assertThat(status("P6")).isEqualTo(SUBMITTED);
+        assertThat(outbox.rows()).hasSize(1);
+        assertThat(outbox.rowsFor("P6").getFirst().amount()).isEqualByComparingTo("300.00");
     }
 }

@@ -4,6 +4,5 @@ public enum PaymentStatus {
     REQUESTED,
     WAITING_FOR_BENEFICIARY,
     SUBMITTED,
-    CANCELLED,
-    REJECTED
+    CANCELLED
 }

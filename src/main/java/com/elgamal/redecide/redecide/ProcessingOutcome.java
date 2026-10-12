@@ -19,8 +19,4 @@ public sealed interface ProcessingOutcome {
     /** Something that happened in the meantime has made this decision unnecessary. */
     record Supersede(String reason) implements ProcessingOutcome {
     }
-
-    /** The payment can never go ahead. */
-    record Reject(String reason) implements ProcessingOutcome {
-    }
 }
